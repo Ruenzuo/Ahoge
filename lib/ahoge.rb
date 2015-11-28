@@ -8,7 +8,7 @@ module Ahoge
     def self.amuse
       main = Main.new
       main.setup_client
-      main.client.update('Whoops!')
+      information = main.get_last_follower_last_photo
     end
 
     def setup_client
@@ -19,6 +19,25 @@ module Ahoge
         config.access_token = auth['access_token']
         config.access_token_secret = auth['access_token_secret']
       end
+    end
+
+    def get_last_follower_last_photo
+      followers = @client.followers([:skip_status => true, :include_user_entities => false])
+      followers.each { |follower|
+        information = viable_information?(follower)
+        return information unless information.empty?
+      }
+    end
+
+    def viable_information?(user)
+      tweets = @client.user_timeline(user)
+      tweets.each { |tweet|
+        next unless tweet.media?
+        tweet.media.each { |media|
+            return [tweet.text, media.media_url] if media.is_a?(Twitter::Media::Photo)
+        }
+      }
+      return []
     end
   end
 end
