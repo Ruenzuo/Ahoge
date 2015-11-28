@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+if $PROGRAM_NAME == __FILE__
+  $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+end
+
+require 'ahoge'
+
+Ahoge::Main.amuse
