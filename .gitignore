@@ -1,8 +1,6 @@
 # Created by https://www.gitignore.io/api/osx,vim,ruby
 
 ### Ahoge ###
-auth.yaml
-ahoge.db
 tweet.png
 
 ### OSX ###
