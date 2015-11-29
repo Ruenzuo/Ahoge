@@ -1,6 +1,5 @@
 require 'twitter'
 require 'yaml'
-require 'sqlite3'
 require 'mini_magick'
 
 module Ahoge
@@ -9,14 +8,12 @@ module Ahoge
     
     def self.amuse
       main = Main.new
-      main.setup_database
       main.setup_client
       tweet, tweet_text, media_url = main.get_last_tweet_in_peru
       # tweet_text, media_url = main.get_last_follower_last_photo
       if tweet_text.nil? or media_url.nil? or tweet.nil?
         abort('No suitable content found')
       end
-      main.store_media_url(media_url)
       tweet_summarized = main.summarize(tweet_text)
       main.magic(tweet_summarized, media_url)
       main.tweet(tweet, tweet_summarized, File.new("tweet.png"))
@@ -34,25 +31,6 @@ module Ahoge
 
     def tweet(tweet, tweet_text, file)
       @client.update_with_media("@#{tweet.user.screen_name} #{tweet_text}", file, :in_reply_to_status => tweet, :result_type => "recent")
-    end
-
-    def setup_database
-      @db = SQLite3::Database.new "ahoge.db"
-      @db.execute(<<-SQL
-        SELECT name
-        FROM sqlite_master
-        WHERE type='table'
-        AND name='media_urls';
-      SQL
-      ) do |row|
-        return
-      end
-      @db.execute <<-SQL
-        CREATE TABLE media_urls (
-          media_url varchar(140)
-        );
-      SQL
-      puts 'Table media_urls created'
     end
 
     def get_last_tweet_in_peru
@@ -82,20 +60,9 @@ module Ahoge
     def information?(tweet)
       return [] unless tweet.media?
       tweet.media.each { |media|
-        return [tweet, tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
+        return [tweet, tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo)
       }
       return []
-    end
-
-    def valid_media?(media)
-      @db.execute("SELECT media_url FROM media_urls WHERE media_url=\'#{media.media_url}\'") do |row|
-        return false
-      end
-      return true
-    end
-
-    def store_media_url(media_url)
-      @db.execute('INSERT INTO media_urls (media_url) VALUES (?)', [media_url])
     end
 
     def summarize(tweet_text)
