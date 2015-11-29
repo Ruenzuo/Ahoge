@@ -12,6 +12,7 @@ module Ahoge
       main.setup_client
       tweet_text, media_url = main.get_last_follower_last_photo
       main.store_media_url(media_url)
+      tweet_summarized = main.summarize(tweet_text)
     end
 
     def setup_client
@@ -52,11 +53,11 @@ module Ahoge
     end
 
     def viable_information?(user)
-      tweets = @client.user_timeline(user, [:exclude_replies => true, :include_rts => false])
+      tweets = @client.user_timeline(user)
       tweets.each { |tweet|
         next unless tweet.media?
         tweet.media.each { |media|
-            return [tweet.text, media.media_url] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
+          return [tweet.text, media.media_url] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
         }
       }
       return []
@@ -71,6 +72,14 @@ module Ahoge
 
     def store_media_url(media_url)
       @db.execute('INSERT INTO media_urls (media_url) VALUES (?)', [media_url.to_s])
+    end
+
+    def summarize(tweet_text)
+      tokens = tweet_text.split
+      return tweet_text if tokens.count < 6
+      limit = tokens.count - 2
+      random = rand(3..limit)
+      return "#{tokens[random - 1]} #{tokens[random]} #{tokens[random + 1]}"
     end
   end
 end
