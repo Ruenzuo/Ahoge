@@ -11,15 +11,15 @@ module Ahoge
       main = Main.new
       main.setup_database
       main.setup_client
-      tweet_text, media_url = main.get_last_tweet_in_peru
+      tweet, tweet_text, media_url = main.get_last_tweet_in_peru
       # tweet_text, media_url = main.get_last_follower_last_photo
-      if tweet_text.nil? || media_url.nil?
+      if tweet_text.nil? or media_url.nil? or tweet.nil?
         abort('No suitable content found')
       end
       main.store_media_url(media_url)
       tweet_summarized = main.summarize(tweet_text)
       main.magic(tweet_summarized, media_url)
-      main.tweet(tweet_summarized, File.new("tweet.png"))
+      main.tweet(tweet, tweet_summarized, File.new("tweet.png"))
     end
 
     def setup_client
@@ -32,8 +32,8 @@ module Ahoge
       end
     end
 
-    def tweet(tweet_text, file)
-      @client.update_with_media(tweet_text, file)
+    def tweet(tweet, tweet_text, file)
+      @client.update_with_media("@#{tweet.user.screen_name} #{tweet_text}", file, :in_reply_to_status => tweet, :result_type => "recent")
     end
 
     def setup_database
@@ -56,7 +56,7 @@ module Ahoge
     end
 
     def get_last_tweet_in_peru
-      @client.search("", :geocode => '-12.05,-77.05,1000km').each { |tweet|
+      @client.search("", :geocode => '-12.05,-77.05,10000km').each { |tweet|
         information = information?(tweet)
         return information unless information.empty?
       }
@@ -82,7 +82,7 @@ module Ahoge
     def information?(tweet)
       return [] unless tweet.media?
       tweet.media.each { |media|
-        return [tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
+        return [tweet, tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
       }
       return []
     end
