@@ -30,7 +30,7 @@ module Ahoge
     end
 
     def tweet(tweet, tweet_text, file)
-      @client.update_with_media("@#{tweet.user.screen_name} #{tweet_text}", file, :in_reply_to_status => tweet, :result_type => "recent")
+      @client.update_with_media("#{tweet_text}", file, :in_reply_to_status => tweet, :result_type => "recent")
     end
 
     def get_last_tweet_in_peru
