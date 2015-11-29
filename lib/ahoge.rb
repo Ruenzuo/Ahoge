@@ -11,7 +11,8 @@ module Ahoge
       main = Main.new
       main.setup_database
       main.setup_client
-      tweet_text, media_url = main.get_last_follower_last_photo
+      tweet_text, media_url = main.get_last_tweet_in_peru
+      # tweet_text, media_url = main.get_last_follower_last_photo
       if tweet_text.nil? || media_url.nil?
         abort('No suitable content found')
       end
@@ -54,6 +55,13 @@ module Ahoge
       puts 'Table media_urls created'
     end
 
+    def get_last_tweet_in_peru
+      @client.search("", :geocode => '-12.05,-77.05,1000km').each { |tweet|
+        information = information?(tweet)
+        return information unless information.empty?
+      }
+    end
+
     def get_last_follower_last_photo
       followers = @client.followers([:skip_status => true, :include_user_entities => false])
       followers.each { |follower|
@@ -65,10 +73,16 @@ module Ahoge
     def viable_information?(user)
       tweets = @client.user_timeline(user)
       tweets.each { |tweet|
-        next unless tweet.media?
-        tweet.media.each { |media|
-          return [tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
-        }
+        information = information?(tweet)
+        return information unless information.empty?
+      }
+      return []
+    end
+
+    def information?(tweet)
+      return [] unless tweet.media?
+      tweet.media.each { |media|
+        return [tweet.text, media.media_url.to_s] if media.is_a?(Twitter::Media::Photo) and valid_media?(media)
       }
       return []
     end
@@ -86,6 +100,7 @@ module Ahoge
 
     def summarize(tweet_text)
       tokens = tweet_text.split
+      tokens.reject! { |token| token.start_with?('http') or token.start_with?('@')}
       return tweet_text if tokens.count < 6
       limit = tokens.count - 2
       random = rand(3..limit)
