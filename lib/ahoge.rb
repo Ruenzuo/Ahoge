@@ -12,6 +12,9 @@ module Ahoge
       main.setup_database
       main.setup_client
       tweet_text, media_url = main.get_last_follower_last_photo
+      if tweet_text.nil? || media_url.nil?
+        abort('No suitable content found')
+      end
       main.store_media_url(media_url)
       tweet_summarized = main.summarize(tweet_text)
       main.magic(tweet_summarized, media_url)
